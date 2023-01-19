@@ -4,7 +4,6 @@ from models import New
 
 
 def create_news():
-    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     session = SessionLocal()
     news = get_all_news()
@@ -25,4 +24,5 @@ def create_news():
 
 
 if __name__ == '__main__':
+    Base.metadata.drop_all(bind=engine)
     create_news()
