@@ -39,6 +39,8 @@ def get_news():
 @app.get("/news/{id}", status_code=status.HTTP_200_OK, response_model=News)
 def get_news_by_id(id: int):
     result = news.get_news_by_id(id)
+    if result is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="News not found")
     result = json.loads(result)
     return News(**result)
 

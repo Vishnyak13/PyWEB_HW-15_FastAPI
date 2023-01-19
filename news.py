@@ -23,6 +23,8 @@ def get_all_news():
 def get_news_by_id(id):
     with SessionLocal() as session:
         news = session.query(New).filter(New.id == id).first()
+        if news is None:
+            return None
         new_dict = {}
         new_dict['id'] = news.id
         new_dict['title'] = news.title
