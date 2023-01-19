@@ -1,9 +1,9 @@
 from sqlalchemy import Integer, String, Column
 
-from db.connect_db import Base
+from connect_db import Base
 
 
-class News(Base):
+class New(Base):
     __tablename__ = "news"
     id = Column(Integer, primary_key=True)
     title = Column(String, unique=True)

@@ -1,28 +1,40 @@
+import json
 from typing import List
 
-from fastapi import FastAPI, Depends
-import json
-
+from fastapi import FastAPI, Depends, HTTPException
+from sqlalchemy.orm import Session
 from starlette.responses import RedirectResponse
 
-from db.connect_db import SessionLocal, get_db
-from src import schemas
-from src.repository import news as news_repository
+from connect_db import SessionLocal
+import news
+from schemas import NewsList, NewsBase, News
 
 app = FastAPI()
 
 
 @app.get("/healthcheck")
 def healthcheck():
-    return {"status": "Everything is OK"}
+    db = SessionLocal()
+    try:
+        r = db.execute("SELECT 1").fetchone()
+        if r is None:
+            raise HTTPException(status_code=500, detail="Database is not responding")
+        return {"message": "Welcome to FastAPI!"}
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=500, detail='Error connecting to database')
 
 
 @app.get("/")
-def main():
+def root():
     return RedirectResponse(url='/docs')
 
 
-@app.get("/news/", status_code=200, response_model=List[schemas.News])
-def read_all_news(skip: int = 0, limit: int = 100, db: SessionLocal = Depends(get_db)):
-    news = news_repository.get_all_news(db, skip=skip, limit=limit)
-    return news
+@app.get("/news/", status_code=200, response_model=NewsList)
+def get_news():
+    result = news.get_all_news()
+    result = json.loads(result)
+    all_news = [News(**item) for item in result]
+    return NewsList(news=all_news)
+
+

@@ -11,7 +11,7 @@ class NewsBase(BaseModel):
 
 
 class News(NewsBase):
-    news_id: str
+    id: int
 
 
 class NewsList(BaseModel):

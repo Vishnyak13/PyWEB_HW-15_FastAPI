@@ -1,6 +1,6 @@
-from db.connect_db import Base, engine, SessionLocal
-from src.repository.scrap_news import get_all_news
-from src.models import News
+from connect_db import Base, engine, SessionLocal
+from scrap_news import get_all_news
+from models import New
 
 
 def create_news():
@@ -14,7 +14,7 @@ def create_news():
             link = item['link']
             created = item['created']
             category = item['category']
-            news = News(title=title, link=link, created=created, category=category)
+            news = New(title=title, link=link, created=created, category=category)
             session.add(news)
         session.commit()
     except Exception as e:
