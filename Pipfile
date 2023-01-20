@@ -9,6 +9,7 @@ sqlalchemy = "*"
 beautifulsoup4 = "*"
 requests = "*"
 uvicorn = {extras = ["standart"], version = "*"}
+alembic = "*"
 
 [dev-packages]
 
