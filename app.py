@@ -1,22 +1,22 @@
-import json
+from typing import List
 
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI, Depends, HTTPException, status
+from sqlalchemy.orm import Session
 from starlette.responses import RedirectResponse
 
-from connect_db import SessionLocal
-import news
-from schemas import NewsList, NewsBase, News
+from db.connect_db import get_db
+from src.repository.crud import add_all_news, get_news, get_news_by_id, delete_news_by_id
+from src.schemas.news import NewsBase, NewsList, NewsResponse
 
 app = FastAPI()
 
 
-@app.get("/healthcheck")
-def healthcheck():
-    db = SessionLocal()
+@app.get("/healthchecker")
+async def healthchecker(db: Session = Depends(get_db)):
     try:
         r = db.execute("SELECT 1").fetchone()
         if r is None:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Database is not responding")
+            raise HTTPException(status_code=500, detail="Database is not responding")
         return {"message": "Welcome to FastAPI!"}
     except Exception as e:
         print(e)
@@ -25,50 +25,55 @@ def healthcheck():
 
 @app.get("/")
 def root():
-    return RedirectResponse(url='/docs')
+    return RedirectResponse(url="/docs")
 
 
-@app.get("/news/", status_code=status.HTTP_200_OK, response_model=NewsList)
-def get_news():
-    result = news.get_all_news()
-    result = json.loads(result)
-    all_news = [News(**item) for item in result]
-    return NewsList(news=all_news)
+@app.post("/add_news", status_code=status.HTTP_201_CREATED)
+async def add_news_to_db(db: Session = Depends(get_db)):
+    try:
+        r = await add_all_news(db)
+        if r is not True:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="News not found")
+        return {"message": "News added successfully"}
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail='Error adding news to database')
 
 
-@app.get("/news/{id}", status_code=status.HTTP_200_OK, response_model=News)
-def get_news_by_id(id: int):
-    result = news.get_news_by_id(id)
-    if result is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="News not found")
-    result = json.loads(result)
-    return News(**result)
+@app.get("/get_news", response_model=List[NewsResponse])
+async def get_news_from_db(db: Session = Depends(get_db)):
+    try:
+        r = await get_news(db)
+        if r is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="News not found")
+        return r
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail='Error getting news from database')
 
 
-@app.get("/news/category/{category}", status_code=status.HTTP_200_OK, response_model=NewsList)
-def get_news_by_category(category: str):
-    result = news.get_news_by_category(category)
-    result = json.loads(result)
-    all_news = [News(**item) for item in result]
-    return NewsList(news=all_news)
+@app.get("/get_news/{id}", response_model=NewsResponse)
+async def get_news_by_id_from_db(id: int, db: Session = Depends(get_db)):
+    try:
+        r = await get_news_by_id(id, db)
+        if r is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="News not found")
+        return r
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail='Error getting news from database')
 
 
-@app.post("/news/", status_code=status.HTTP_201_CREATED, response_model=News)
-def add_one_new(body: NewsBase):
-    title = body.title
-    link = body.link
-    created = body.created
-    category = body.category
-    news_id = news.add_new(title, link, created, category)
-    result = news.get_news_by_id(news_id)
-    result = json.loads(result)
-    return News(**result)
-
-
-@app.delete("/news/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_one_new(id: int):
-    answer = news.delete_news(id)
-    if answer == 0:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="News not found")
-    else:
-        return {"message": "News {} was deleted".format(id)}
+@app.delete("/{news_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_news_by_id_from_db(news_id: int, db: Session = Depends(get_db)):
+    try:
+        result = await delete_news_by_id(news_id, db)
+        if result is None:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="News not found")
+        return result
+    except Exception as e:
+        print(e)
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                            detail='Error deleting news from database')

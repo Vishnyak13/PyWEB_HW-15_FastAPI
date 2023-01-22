@@ -10,9 +10,9 @@ class NewsBase(BaseModel):
     category: str
 
 
-class News(NewsBase):
+class NewsResponse(NewsBase):
     id: int
 
 
 class NewsList(BaseModel):
-    news: List[News]
+    news: List[NewsResponse]

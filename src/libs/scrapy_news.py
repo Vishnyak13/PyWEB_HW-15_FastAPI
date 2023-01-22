@@ -77,4 +77,3 @@ def get_all_news():
         football_news = process.apply_async(get_football_news)
         news = process.apply_async(get_news)
         return movie_news.get() + football_news.get() + news.get()
-
